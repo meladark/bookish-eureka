@@ -7,10 +7,6 @@ import (
 
 var ErrInvalidString = errors.New("некорректная строка")
 
-/*
-Упаковка сокращена до вида: \2abcde
-Развернуть строку вида: aabccddee
-*/
 func Unpack(input string) (string, error) {
 	runes := []rune(input)
 	var res []rune
@@ -22,13 +18,12 @@ func Unpack(input string) (string, error) {
 	for i := range length {
 		char := runes[i]
 		if i == 0 {
-			if unicode.IsDigit(char) {
-				return "", ErrInvalidString
-			} else {
+			if !unicode.IsDigit(char) {
 				buff = char
 				symbol = char
+				continue
 			}
-			continue
+			return "", ErrInvalidString
 		}
 		if buff == '\\' {
 			if unicode.IsDigit(char) || char == '\\' {
@@ -55,12 +50,13 @@ func Unpack(input string) (string, error) {
 				res = append(res, symbol)
 				symbol = char
 				buff = char
-			} else {
-				symbol = char
-				buff = char
+				continue
 			}
+			symbol = char
+			buff = char
 		}
 	}
+
 	if !unicode.IsDigit(buff) && length != 0 {
 		res = append(res, symbol)
 	}
