@@ -7,9 +7,10 @@ import (
 )
 
 // Change to true if needed.
-var taskWithAsteriskIsCompleted = false
+// var taskWithAsteriskIsCompleted = true
 
-var text = `Как видите, он  спускается  по  лестнице  вслед  за  своим
+var text = []string{
+	`Как видите, он  спускается  по  лестнице  вслед  за  своим
 	другом   Кристофером   Робином,   головой   вниз,  пересчитывая
 	ступеньки собственным затылком:  бум-бум-бум.  Другого  способа
 	сходить  с  лестницы  он  пока  не  знает.  Иногда ему, правда,
@@ -41,42 +42,81 @@ var text = `Как видите, он  спускается  по  лестни�
 		Иногда Винни-Пух любит вечерком во что-нибудь поиграть,  а
 	иногда,  особенно  когда  папа  дома,  он больше любит тихонько
 	посидеть у огня и послушать какую-нибудь интересную сказку.
-		В этот вечер...`
+		В этот вечер...`,
+	"cat and dog, one dog,two cats and one man",
+	`Нога нога нога! нога, 'нога'`,
+	`abb abb aaa aaa`,
+	`------- -`,
+	`dog,cat dog...cat dogcat`,
+}
 
 func TestTop10(t *testing.T) {
 	t.Run("no words in empty string", func(t *testing.T) {
 		require.Len(t, Top10(""), 0)
+		require.Len(t, Top10Asterisk(""), 0)
 	})
 
 	t.Run("positive test", func(t *testing.T) {
-		if taskWithAsteriskIsCompleted {
-			expected := []string{
-				"а",         // 8
-				"он",        // 8
-				"и",         // 6
-				"ты",        // 5
-				"что",       // 5
-				"в",         // 4
-				"его",       // 4
-				"если",      // 4
-				"кристофер", // 4
-				"не",        // 4
-			}
-			require.Equal(t, expected, Top10(text))
-		} else {
-			expected := []string{
-				"он",        // 8
-				"а",         // 6
-				"и",         // 6
-				"ты",        // 5
-				"что",       // 5
-				"-",         // 4
-				"Кристофер", // 4
-				"если",      // 4
-				"не",        // 4
-				"то",        // 4
-			}
-			require.Equal(t, expected, Top10(text))
+		expected := []string{
+			"а",         // 8
+			"он",        // 8
+			"и",         // 6
+			"ты",        // 5
+			"что",       // 5
+			"в",         // 4
+			"его",       // 4
+			"если",      // 4
+			"кристофер", // 4
+			"не",        // 4
 		}
+		require.Equal(t, expected, Top10Asterisk(text[0]))
+		expected = []string{
+			"он",        // 8
+			"а",         // 6
+			"и",         // 6
+			"ты",        // 5
+			"что",       // 5
+			"-",         // 4
+			"Кристофер", // 4
+			"если",      // 4
+			"не",        // 4
+			"то",        // 4
+		}
+		require.Equal(t, expected, Top10(text[0]))
+		expected = []string{
+			"and",     // (2)
+			"one",     // (2)
+			"cat",     // (1)
+			"cats",    // (1)
+			"dog,",    // (1)
+			"dog,two", // (1)
+			"man",     // (1)
+		}
+		require.Equal(t, expected, Top10(text[1]))
+		expected = []string{
+			"нога",
+		}
+		require.Equal(t, expected, Top10Asterisk(text[2]))
+		expected = []string{
+			"'нога'", "Нога", "нога", "нога!", "нога,",
+		}
+		require.Equal(t, expected, Top10(text[2]))
+		expected = []string{
+			"aaa", "abb",
+		}
+		require.Equal(t, expected, Top10(text[3]))
+		require.Equal(t, expected, Top10Asterisk(text[3]))
+		expected = []string{
+			"-", "-------",
+		}
+		require.Equal(t, expected, Top10(text[4]))
+		expected = []string{
+			"-------",
+		}
+		require.Equal(t, expected, Top10Asterisk(text[4]))
+		expected = []string{
+			"dog,cat", "dog...cat", "dogcat",
+		}
+		require.Equal(t, expected, Top10Asterisk(text[5]))
 	})
 }
