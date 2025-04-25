@@ -6,6 +6,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,12 +51,59 @@ func TestCache(t *testing.T) {
 	})
 
 	t.Run("purge logic", func(t *testing.T) {
-		// Write me
+		// Создали кэш с 3 элементами, потом 4 заменяет 1
+		c := NewCache(3)
+		c.Set("key1", "value1")
+		c.Set("key2", "value2")
+		c.Set("key3", "value3")
+		value1, ok1 := c.Get("key1")
+		value2, ok2 := c.Get("key2")
+		value3, ok3 := c.Get("key3")
+		assert.True(t, ok1)
+		assert.True(t, ok2)
+		assert.True(t, ok3)
+		assert.Equal(t, "value1", value1)
+		assert.Equal(t, "value2", value2)
+		assert.Equal(t, "value3", value3)
+		c.Set("key4", "value4")
+		value1, ok1 = c.Get("key1")
+		value2, ok2 = c.Get("key2")
+		value3, ok3 = c.Get("key3")
+		value4, ok4 := c.Get("key4")
+		assert.False(t, ok1)
+		assert.True(t, ok2)
+		assert.True(t, ok3)
+		assert.True(t, ok4)
+		assert.Nil(t, value1)
+		assert.Equal(t, "value2", value2)
+		assert.Equal(t, "value3", value3)
+		assert.Equal(t, "value4", value4)
+
+		// Тест, что будет удален именно последний, после работы
+		c.Clear()
+		c.Set("key1", "value1")
+		c.Set("key2", "value2")
+		c.Set("key3", "value3")
+		// поднял вверх 1 и 3
+		value1, ok1 = c.Get("key1")
+		value2, ok2 = c.Get("key3")
+		assert.True(t, ok1)
+		assert.True(t, ok2)
+		assert.Equal(t, "value1", value1)
+		assert.Equal(t, "value3", value2)
+		// самый последний элемент 2, он будет удален
+		c.Set("key4", "value4")
+		value1, ok1 = c.Get("key2")
+		assert.False(t, ok1)
+		assert.Nil(t, value1)
+		value1, ok1 = c.Get("key4")
+		assert.True(t, ok1)
+		assert.Equal(t, "value4", value1)
 	})
 }
 
-func TestCacheMultithreading(t *testing.T) {
-	t.Skip() // Remove me if task with asterisk completed.
+func TestCacheMultithreading(_ *testing.T) {
+	// Remove me if task with asterisk completed.
 
 	c := NewCache(10)
 	wg := &sync.WaitGroup{}
@@ -74,6 +122,5 @@ func TestCacheMultithreading(t *testing.T) {
 			c.Get(Key(strconv.Itoa(rand.Intn(1_000_000))))
 		}
 	}()
-
 	wg.Wait()
 }

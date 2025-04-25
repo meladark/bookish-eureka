@@ -48,4 +48,19 @@ func TestList(t *testing.T) {
 		}
 		require.Equal(t, []int{70, 80, 60, 40, 10, 30, 50}, elems)
 	})
+	// Добитие покрытие до 100%
+	t.Run("empty", func(t *testing.T) {
+		l := NewList()
+		require.Equal(t, 0, l.Len())
+		l.PushFront(10)
+		k := l.Front()
+		l.MoveToFront(k)
+		require.Equal(t, 10, l.Front().Value)
+		l.Remove(k)
+		require.Equal(t, 0, l.Len())
+		l.PushBack(10)
+		k = l.Back()
+		l.MoveToFront(k)
+		require.Equal(t, 10, l.Front().Value)
+	})
 }
