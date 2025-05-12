@@ -42,7 +42,6 @@ func TestRun(t *testing.T) {
 		for i := 0; i < tasksCount; i++ {
 			taskSleep := time.Millisecond * time.Duration(rand.Intn(100))
 			sumTime += taskSleep
-
 			tasks = append(tasks, func() error {
 				time.Sleep(taskSleep)
 				atomic.AddInt32(&runTasksCount, 1)
