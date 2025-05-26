@@ -23,6 +23,7 @@ func TestPipeline(t *testing.T) {
 				defer close(out)
 				for v := range in {
 					time.Sleep(sleepPerStage)
+					t.Log("start")
 					out <- f(v)
 				}
 			}()
@@ -91,6 +92,30 @@ func TestPipeline(t *testing.T) {
 		require.Len(t, result, 0)
 		require.Less(t, int64(elapsed), int64(abortDur)+int64(fault))
 	})
+	t.Run("test with 0 data", func(t *testing.T) {
+		in := make(Bi)
+		done := make(Bi)
+		data := []int{}
+
+		// Abort after 200ms
+		abortDur := sleepPerStage * 2
+		go func() {
+			<-time.After(abortDur)
+			close(done)
+		}()
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+		}()
+		close(in)
+		result := make([]string, 0, 10)
+		for s := range ExecutePipeline(in, done, stages...) {
+			result = append(result, s.(string))
+		}
+		require.Len(t, result, 0)
+	})
 }
 
 func TestAllStageStop(t *testing.T) {
@@ -145,6 +170,31 @@ func TestAllStageStop(t *testing.T) {
 		wg.Wait()
 
 		require.Len(t, result, 0)
+	})
 
+	t.Run("test with 0 data", func(t *testing.T) {
+		in := make(Bi)
+		done := make(Bi)
+		data := []int{}
+
+		// Abort after 200ms
+		abortDur := sleepPerStage * 2
+		go func() {
+			<-time.After(abortDur)
+			close(done)
+		}()
+
+		go func() {
+			for _, v := range data {
+				in <- v
+			}
+		}()
+		close(in)
+		result := make([]string, 0, 10)
+		for s := range ExecutePipeline(in, done, stages...) {
+			result = append(result, s.(string))
+			wg.Wait()
+		}
+		require.Len(t, result, 0)
 	})
 }
