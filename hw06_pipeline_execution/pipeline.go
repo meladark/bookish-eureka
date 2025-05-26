@@ -29,9 +29,11 @@ func RunStage(in In, done In, stage Stage) Out {
 					for v := range in {
 						_ = v
 					}
-					for v := range stageOut {
-						_ = v
-					}
+					go func() {
+						for v := range stageOut {
+							_ = v
+						}
+					}()
 					return
 				}
 			case v, ok := <-stageOut:
