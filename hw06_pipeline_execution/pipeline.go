@@ -25,11 +25,13 @@ func RunStage(in In, done In, stage Stage) Out {
 			select {
 			case _, ok := <-done:
 				if !ok {
-					go func() {
-						for v := range stageOut {
-							_ = v
-						}
-					}()
+					// дренируем каналы чтобы быстрее завершилась работа
+					for v := range in {
+						_ = v
+					}
+					for v := range stageOut {
+						_ = v
+					}
 					return
 				}
 			case v, ok := <-stageOut:
