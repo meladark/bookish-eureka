@@ -43,6 +43,7 @@ func Copy(fromPath string, toPath string, offset int64, limit int64) error {
 	if offset > fileSize {
 		return ErrOffsetExceedsFileSize
 	}
+
 	_, err = fromFile.Seek(offset, io.SeekStart)
 	if err != nil {
 		return err
@@ -59,7 +60,10 @@ func Copy(fromPath string, toPath string, offset int64, limit int64) error {
 	const bufSize = 4096
 	buf := make([]byte, bufSize)
 	var copied int64
-	printProgressBar(0, limit)
+	if fileSize != 0 {
+		printProgressBar(0, limit)
+		defer fmt.Println()
+	}
 	for copied < limit {
 		bytesToRead := bufSize
 		if remaining := limit - copied; remaining < int64(bufSize) {
