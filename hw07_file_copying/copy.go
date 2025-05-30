@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"os"
-
-	"github.com/cheggaaa/pb/v3"
+	"strings"
 )
 
 var (
@@ -13,7 +13,20 @@ var (
 	ErrOffsetExceedsFileSize = errors.New("offset exceeds file size")
 )
 
-func Copy(fromPath, toPath string, offset, limit int64) error {
+func printProgressBar(copied int64, total int64) {
+	const width = 50
+	percent := float64(copied) / float64(total) * 100
+	filled := int(float64(width) * percent / 100)
+	empty := width - filled
+
+	fmt.Printf("\r[%s%s] %.2f%%",
+		strings.Repeat("=", filled),
+		strings.Repeat(" ", empty),
+		percent,
+	)
+}
+
+func Copy(fromPath string, toPath string, offset int64, limit int64) error {
 	fromFile, err := os.Open(fromPath)
 	if err != nil {
 		return err
@@ -46,6 +59,7 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 	const bufSize = 4096
 	buf := make([]byte, bufSize)
 	var copied int64
+	printProgressBar(0, limit)
 	for copied < limit {
 		bytesToRead := bufSize
 		if remaining := limit - copied; remaining < int64(bufSize) {
@@ -58,15 +72,13 @@ func Copy(fromPath, toPath string, offset, limit int64) error {
 			}
 			return err
 		}
-		bar := pb.Full.Start64(limit)
-		defer bar.Finish()
 		if n > 0 {
 			_, err := toFile.Write(buf[:n])
 			if err != nil {
 				return err
 			}
 			copied += int64(n)
-			bar.Add(n)
+			printProgressBar(copied, limit)
 		}
 	}
 	return nil
