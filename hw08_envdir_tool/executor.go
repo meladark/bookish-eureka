@@ -56,7 +56,7 @@ func RunCmd(cmd []string, env Environment) (returnCode int) {
 
 // здесь нет чего-то "умного", сделал просто чтобы не ругался статический анализатор
 // проверка тривиальная, чтобы было проще проверить в юните тесте
-// но если бы был список правил, то его можно разместить тут
+// но если бы был список правил, то его можно разместить тут.
 func isSafeCommand(cmd string) (bool, string) {
 	if strings.Contains(cmd, "bad_command") {
 		return false, cmd
