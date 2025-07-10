@@ -1,8 +1,8 @@
 # Собираем в гошке
-FROM golang:1.22 as build
+FROM golang:1.24 as build
 
-ENV BIN_FILE /opt/calendar/calendar-app
-ENV CODE_DIR /go/src/
+ENV BIN_FILE=/opt/calendar/calendar-app
+ENV CODE_DIR=/go/src/
 
 WORKDIR ${CODE_DIR}
 
@@ -21,16 +21,20 @@ RUN CGO_ENABLED=0 go build \
         -o ${BIN_FILE} cmd/calendar/*
 
 # На выходе тонкий образ
-FROM alpine:3.9
+FROM scratch
 
 LABEL ORGANIZATION="OTUS Online Education"
 LABEL SERVICE="calendar"
-LABEL MAINTAINERS="student@otus.ru"
+LABEL MAINTAINERS="mi.volkov@bi.zone"
 
-ENV BIN_FILE "/opt/calendar/calendar-app"
-COPY --from=build ${BIN_FILE} ${BIN_FILE}
+# ENV BIN_FILE="/opt/calendar/calendar-app"
+# COPY --from=build ${BIN_FILE} ${BIN_FILE}
+COPY --from=build /opt/calendar/calendar-app /opt/calendar/calendar-app
+# ENV CONFIG_FILE=/etc/calendar/config.toml
 
-ENV CONFIG_FILE /etc/calendar/config.toml
-COPY ./configs/config.toml ${CONFIG_FILE}
+#COPY ./configs/config.toml ${CONFIG_FILE}
 
-CMD ${BIN_FILE} -config ${CONFIG_FILE}
+COPY ./configs/config.toml /etc/calendar/config.toml
+
+ENTRYPOINT [ "/opt/calendar/calendar-app", "--config", "/etc/calendar/config.toml" ]
+# CMD ${BIN_FILE} -config ${CONFIG_FILE}
