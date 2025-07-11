@@ -18,7 +18,7 @@ run-server:
 	@sleep 2
 
 test-server:
-	@if curl -s http://localhost:881 | grep -q "Hello, Calendar!"; then \
+	@if curl -s http://localhost:8888 | grep -q "Hello, Calendar!"; then \
 		echo "✅ Сервер отвечает корректно."; \
 		kill -2 $$(cat server.pid); \
 		rm server.pid; \

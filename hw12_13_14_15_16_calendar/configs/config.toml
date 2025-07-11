@@ -4,7 +4,7 @@ logfile = "./calendar.log"
 
 [http_server]
 host = "0.0.0.0"
-port = "881"
+port = "8888"
 
 [storage]
 type = "memory"
