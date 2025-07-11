@@ -1,6 +1,6 @@
 module github.com/fixme_my_friend/hw12_13_14_15_calendar
 
-go 1.24
+go 1.22
 
 require github.com/spf13/viper v1.20.1
 
@@ -13,7 +13,6 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
-	github.com/google/uuid v1.6.0
 	github.com/lib/pq v1.10.9
 	github.com/pelletier/go-toml/v2 v2.2.3 // indirect
 	github.com/sagikazarmark/locafero v0.7.0 // indirect

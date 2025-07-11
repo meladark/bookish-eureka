@@ -40,7 +40,7 @@ type Logger struct {
 }
 
 func New(level string, logFilePath string) *Logger {
-	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		log.Fatalf("cannot open log file: %v", err)
 	}
@@ -85,7 +85,7 @@ func (l *Logger) log(level Level, msg string) {
 		levelStr = "DEBUG"
 	}
 
-	timestamp := time.Now().Format("1996-07-13 10:00:00")
+	timestamp := time.Now().Format("2006-01-02 15:04:05")
 	output := fmt.Sprintf("%s [%s] %s", timestamp, levelStr, msg)
 	l.std.Println(output)
 }

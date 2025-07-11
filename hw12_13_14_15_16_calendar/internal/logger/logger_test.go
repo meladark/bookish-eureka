@@ -26,6 +26,12 @@ const expected = `[INFO] Info message
 
 func TestLoggerLevels(t *testing.T) {
 	patest := "./test.log"
+	if _, err := os.Stat(patest); err == nil {
+		err = os.Remove(patest)
+		if err != nil {
+			t.Fatalf("Ошибка при удалении файла: %v\n", err)
+		}
+	}
 	log := New("info", patest)
 	l := "Empty"
 	for i := range 4 {

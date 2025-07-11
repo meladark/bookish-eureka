@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"time"
 )
 
 type Server struct {
@@ -16,7 +17,7 @@ type Logger interface {
 	Error(msg string)
 }
 
-func NewServer(logger Logger) *Server {
+func NewServer(logger Logger, host string, port string) *Server {
 	mux := http.NewServeMux()
 	s := &Server{
 		logger: logger,
@@ -25,8 +26,9 @@ func NewServer(logger Logger) *Server {
 	mux.HandleFunc("/", helloHandler)
 
 	s.http = &http.Server{
-		Addr:    ":8080",
-		Handler: loggingMiddleware(logger)(mux),
+		Addr:              host + ":" + port,
+		Handler:           loggingMiddleware(logger)(mux),
+		ReadHeaderTimeout: 5 * time.Second,
 	}
 
 	return s
@@ -54,7 +56,7 @@ func (s *Server) Stop(ctx context.Context) error {
 	return s.http.Shutdown(ctx)
 }
 
-func helloHandler(w http.ResponseWriter, r *http.Request) {
+func helloHandler(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte("Hello, Calendar!\n"))
 }

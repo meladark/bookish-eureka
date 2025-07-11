@@ -8,10 +8,15 @@ import (
 	"syscall"
 	"time"
 
+	//nolint:depguard
 	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
+	//nolint:depguard
 	logger "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
+	//nolint:depguard
 	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
+	//nolint:depguard
 	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	//nolint:depguard
 	sql "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
@@ -31,7 +36,6 @@ func main() {
 
 	cfg, err := NewConfig(configFile)
 	if err != nil {
-
 		panic("cannot load config: " + err.Error())
 	}
 	logg := logger.New(cfg.Logger.Level, cfg.Logger.Logfile)
@@ -54,7 +58,7 @@ func main() {
 	}
 	_ = app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg)
+	server := internalhttp.NewServer(logg, cfg.HTTPServer.Host, cfg.HTTPServer.Port)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -74,6 +78,7 @@ func main() {
 	if err := server.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
+		//nolint:gocritic // reason: выше явно есть cancel
 		os.Exit(1)
 	}
 }

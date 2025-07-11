@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	//nolint:depguard
 	event "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage"
 )
 
@@ -18,11 +19,11 @@ func New() *Storage {
 	}
 }
 
-func (s *Storage) Close(ctx context.Context) error {
+func (s *Storage) Close(_ context.Context) error {
 	return nil
 }
 
-func (s *Storage) CreateEvent(ctx context.Context, e event.Event) error {
+func (s *Storage) CreateEvent(_ context.Context, e event.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -34,7 +35,7 @@ func (s *Storage) CreateEvent(ctx context.Context, e event.Event) error {
 	return nil
 }
 
-func (s *Storage) GetEvent(ctx context.Context, id string) (*event.Event, error) {
+func (s *Storage) GetEvent(_ context.Context, id string) (*event.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 
@@ -45,7 +46,7 @@ func (s *Storage) GetEvent(ctx context.Context, id string) (*event.Event, error)
 	return &e, nil
 }
 
-func (s *Storage) UpdateEvent(ctx context.Context, e event.Event) error {
+func (s *Storage) UpdateEvent(_ context.Context, e event.Event) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -57,7 +58,7 @@ func (s *Storage) UpdateEvent(ctx context.Context, e event.Event) error {
 	return nil
 }
 
-func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
+func (s *Storage) DeleteEvent(_ context.Context, id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
@@ -69,7 +70,7 @@ func (s *Storage) DeleteEvent(ctx context.Context, id string) error {
 	return nil
 }
 
-func (s *Storage) ListEvents(ctx context.Context) ([]event.Event, error) {
+func (s *Storage) ListEvents(_ context.Context) ([]event.Event, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 

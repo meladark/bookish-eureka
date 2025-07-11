@@ -6,9 +6,10 @@ import (
 	"errors"
 	"time"
 
-	"github.com/lib/pq"
-
+	//nolint:depguard
 	event "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage"
+	//nolint:depguard
+	"github.com/lib/pq"
 )
 
 type Storage struct {
@@ -34,7 +35,7 @@ func New(dsn string) (*Storage, error) {
 	if err := db.QueryRowContext(ctx, checkTableQuery).Scan(&tableName); err != nil {
 		return nil, err
 	}
-
+	//nolint:nestif
 	if !tableName.Valid {
 		const createTableQuery = `
 			CREATE TABLE events (
@@ -109,7 +110,7 @@ func New(dsn string) (*Storage, error) {
 	return &Storage{db: db}, nil
 }
 
-func (s *Storage) Close(ctx context.Context) error {
+func (s *Storage) Close(_ context.Context) error {
 	return s.db.Close()
 }
 
@@ -120,7 +121,6 @@ func (s *Storage) CreateEvent(ctx context.Context, e event.Event) error {
     `
 	_, err := s.db.ExecContext(ctx, query,
 		e.ID, e.Title, e.Description, e.StartTime, e.EndTime, e.UserID, e.NotifyAt)
-
 	if err != nil {
 		var pgErr *pq.Error
 		if errors.As(err, &pgErr) {
