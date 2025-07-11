@@ -75,4 +75,5 @@ install-lint-deps:
 	(which golangci-lint > /dev/null) || curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin v1.57.2
 
 lint: install-lint-deps
-	golangci-lint run ./cmd/... ./internal/...
+	golangci-lint run ./cmd/... ./internal/... --skip-dirs-use-default=false --skip-dirs="vendor|migrations|build|docs|bin|deployments|api"
+
