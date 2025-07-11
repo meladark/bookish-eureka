@@ -8,10 +8,16 @@ import (
 	"syscall"
 	"time"
 
+	//nolint:depguard
 	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
+	//nolint:depguard
+	logger "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
+	//nolint:depguard
 	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
+	//nolint:depguard
 	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	//nolint:depguard
+	sql "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
@@ -28,13 +34,31 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	cfg, err := NewConfig(configFile)
+	if err != nil {
+		panic("cannot load config: " + err.Error())
+	}
+	logg := logger.New(cfg.Logger.Level, cfg.Logger.Logfile)
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	var storage app.Storage
 
-	server := internalhttp.NewServer(logg, calendar)
+	switch cfg.Storage.Type {
+	case "memory":
+		storage = memorystorage.New()
+	case "sql":
+		db, err := sql.New(cfg.Storage.SQL.DSN)
+		if err != nil {
+			logg.Error("cannot init sql storage: " + err.Error())
+			os.Exit(1)
+		}
+		storage = db
+	default:
+		logg.Error("unknown storage type: " + cfg.Storage.Type)
+		os.Exit(1)
+	}
+	_ = app.New(logg, storage)
+
+	server := internalhttp.NewServer(logg, cfg.HTTPServer.Host, cfg.HTTPServer.Port)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -42,11 +66,9 @@ func main() {
 
 	go func() {
 		<-ctx.Done()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-
-		if err := server.Stop(ctx); err != nil {
+		if err := server.Stop(ctxTimeout); err != nil {
 			logg.Error("failed to stop http server: " + err.Error())
 		}
 	}()
@@ -56,6 +78,7 @@ func main() {
 	if err := server.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
-		os.Exit(1) //nolint:gocritic
+		//nolint:gocritic // reason: выше явно есть cancel
+		os.Exit(1)
 	}
 }
