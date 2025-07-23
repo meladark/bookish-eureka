@@ -4,9 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"time"
+
+	logger "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
 )
 
-func loggingMiddleware(logger Logger) func(http.Handler) http.Handler {
+func loggingMiddleware(logger logger.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()

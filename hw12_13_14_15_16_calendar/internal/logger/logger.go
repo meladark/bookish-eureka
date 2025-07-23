@@ -39,7 +39,7 @@ type Logger struct {
 	logFile *os.File
 }
 
-func New(level string, logFilePath string) *Logger {
+func New(level string, logFilePath string) Logger {
 	logFile, err := os.OpenFile(logFilePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {
 		log.Fatalf("cannot open log file: %v", err)
@@ -47,7 +47,7 @@ func New(level string, logFilePath string) *Logger {
 
 	multiWriter := io.MultiWriter(os.Stdout, logFile)
 
-	return &Logger{
+	return Logger{
 		level:   parseLevel(level),
 		std:     log.New(multiWriter, "", 0),
 		logFile: logFile,

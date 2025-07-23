@@ -6,6 +6,10 @@ logfile = "./calendar.log"
 host = "0.0.0.0"
 port = "8888"
 
+[grpc_server]
+host = "0.0.0.0"
+port = "9999"
+
 [storage]
 type = "memory"
 
