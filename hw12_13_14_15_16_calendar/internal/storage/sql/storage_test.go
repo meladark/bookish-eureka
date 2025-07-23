@@ -205,7 +205,7 @@ func dropEventsTable(t *testing.T, dsn string) {
 	db, err := sql.Open("postgres", dsn)
 	require.NoError(t, err)
 	defer db.Close()
-
+	//nolint:noctx // просто тесты
 	_, err = db.Exec(`DROP TABLE IF EXISTS public.events`)
 	require.NoError(t, err)
 }

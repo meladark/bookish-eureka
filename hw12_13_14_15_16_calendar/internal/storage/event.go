@@ -17,11 +17,11 @@ type Event struct {
 }
 
 type Storage interface {
-	CreateEvent(ctx context.Context, e *Event) error
+	CreateEvent(ctx context.Context, e Event) error
 	GetEvent(ctx context.Context, id string) (*Event, error)
-	UpdateEvent(ctx context.Context, e *Event) error
+	UpdateEvent(ctx context.Context, e Event) error
 	DeleteEvent(ctx context.Context, id string) error
-	ListEvents(ctx context.Context) ([]*Event, error)
+	ListEvents(ctx context.Context) ([]Event, error)
 	Close(ctx context.Context) error
 }
 

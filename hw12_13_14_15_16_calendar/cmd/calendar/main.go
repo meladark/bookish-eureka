@@ -8,15 +8,12 @@ import (
 	"syscall"
 	"time"
 
-	//nolint:depguard
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	//nolint:depguard
+	app "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
 	logger "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
-	//nolint:depguard
+	internalgrpc "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
-	//nolint:depguard
+	event "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
-	//nolint:depguard
 	sql "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
@@ -40,7 +37,7 @@ func main() {
 	}
 	logg := logger.New(cfg.Logger.Level, cfg.Logger.Logfile)
 
-	var storage app.Storage
+	var storage event.Storage
 
 	switch cfg.Storage.Type {
 	case "memory":
@@ -56,9 +53,10 @@ func main() {
 		logg.Error("unknown storage type: " + cfg.Storage.Type)
 		os.Exit(1)
 	}
-	_ = app.New(logg, storage)
+	application := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, cfg.HTTPServer.Host, cfg.HTTPServer.Port)
+	httpServer := internalhttp.NewServer(logg, application, cfg.HTTPServer.Host, cfg.HTTPServer.Port)
+	grpcServer := internalgrpc.NewServer(application, logg)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -68,14 +66,26 @@ func main() {
 		<-ctx.Done()
 		ctxTimeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
-		if err := server.Stop(ctxTimeout); err != nil {
+
+		if err := httpServer.Stop(ctxTimeout); err != nil {
 			logg.Error("failed to stop http server: " + err.Error())
+		}
+
+		if err := grpcServer.Stop(); err != nil {
+			logg.Error("failed to stop grpc server: " + err.Error())
+		}
+	}()
+
+	go func() {
+		if err := grpcServer.Start(ctx, cfg.GRPCServer.Host, cfg.GRPCServer.Port); err != nil {
+			logg.Error("failed to start grpc server: " + err.Error())
+			cancel()
 		}
 	}()
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
+	if err := httpServer.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
 		//nolint:gocritic // reason: выше явно есть cancel

@@ -16,6 +16,10 @@ type Config struct {
 		Host string `mapstructure:"host"`
 		Port string `mapstructure:"port"`
 	} `mapstructure:"http_server"`
+	GRPCServer struct {
+		Host string `mapstructure:"host"`
+		Port string `mapstructure:"port"`
+	} `mapstructure:"grpc_server"`
 	Storage struct {
 		Type string `mapstructure:"type"` // memory | sql
 		SQL  struct {

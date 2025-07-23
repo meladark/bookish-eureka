@@ -2,6 +2,40 @@ syntax = "proto3";
 
 package event;
 
-message Event {
-    // TODO
+import "Event.proto";
+
+option go_package = "calendar/internal/pb;pb";
+
+// --- Create ---
+message CreateEventRequest { Event event = 1; }
+message CreateEventResponse { Event event = 1; }
+
+// --- Update ---
+message UpdateEventRequest { Event event = 1; }
+message UpdateEventResponse { Event event = 1; }
+
+// --- Delete ---
+message DeleteEventRequest { string id = 1; }
+message DeleteEventResponse {}
+
+// --- Get ---
+message GetEventRequest { string id = 1; }
+message GetEventResponse { Event event = 1; }
+
+// --- List ---
+message ListEventsRequest {
+  int64 date = 1; // Unix timestamp
+}
+message ListEventsResponse { repeated Event events = 1; }
+
+// --- Сервис ---
+
+service EventService {
+  rpc CreateEvent(CreateEventRequest) returns (CreateEventResponse);
+  rpc UpdateEvent(UpdateEventRequest) returns (UpdateEventResponse);
+  rpc DeleteEvent(DeleteEventRequest) returns (DeleteEventResponse);
+  rpc GetEvent(GetEventRequest) returns (GetEventResponse);
+  rpc ListEventsByDay(ListEventsRequest) returns (ListEventsResponse);
+  rpc ListEventsByWeek(ListEventsRequest) returns (ListEventsResponse);
+  rpc ListEventsByMonth(ListEventsRequest) returns (ListEventsResponse);
 }
