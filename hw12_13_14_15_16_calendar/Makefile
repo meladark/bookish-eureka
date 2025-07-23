@@ -42,7 +42,7 @@ test-http:
 	@echo "\n=== Test 1: Create Event ==="
 	@code=$$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8888/events \
 		-H "Content-Type: application/json" \
-		-d '{"id": "event-1", "title": "HTTP Test Event", "start_time": "2025-07-23T10:00:00Z", "end_time": "2025-07-23T11:00:00Z"}'); \
+		-d '{"id": "event-1", "title": "HTTP Test Event", "startTime": "2025-07-23T10:00:00Z", "endTime": "2025-07-23T11:00:00Z"}'); \
 	if [ "$$code" != "201" ]; then \
 		echo "❌ Первое создание события не удалось. Код: $$code"; \
 		kill -2 $$(cat server.pid) && rm -f server.pid; \
@@ -53,7 +53,7 @@ test-http:
 	@echo "\n=== Test 1.1: Duplicate Event Creation ==="
 	@code=$$(curl -s -o /dev/null -w "%{http_code}" -X POST http://localhost:8888/events \
 		-H "Content-Type: application/json" \
-		-d '{"id": "event-1", "title": "HTTP Test Event", "start_time": "2025-07-23T10:00:00Z", "end_time": "2025-07-23T11:00:00Z"}'); \
+		-d '{"id": "event-1", "title": "HTTP Test Event", "startTime": "2025-07-23T10:00:00Z", "endTime": "2025-07-23T11:00:00Z"}'); \
 	if [ "$$code" = "201" ]; then \
 		echo "❌ Повторное создание прошло успешно, хотя должно было завершиться ошибкой."; \
 		kill -2 $$(cat server.pid) && rm -f server.pid; \
@@ -75,7 +75,7 @@ test-http:
 	@echo "\n=== Test 3: Exclude Events Outside Day ==="
 	@curl -s -X POST http://localhost:8888/events \
 		-H "Content-Type: application/json" \
-		-d '{"id": "event-2", "title": "Outside Day", "start_time": "2025-07-24T10:00:00Z", "end_time": "2025-07-24T11:00:00Z"}' >/dev/null
+		-d '{"id": "event-2", "title": "Outside Day", "startTime": "2025-07-24T10:00:00Z", "endTime": "2025-07-24T11:00:00Z"}' >/dev/null
 	@response=$$(curl -s "http://localhost:8888/events/day?date=2025-07-23T00:00:00Z"); \
 	echo "$$response" | grep -q "event-2"; \
 	if [ $$? -eq 0 ]; then \
@@ -158,7 +158,7 @@ test-grpc: check-grpcurl
 	@$(eval SERVER_ADDR := localhost:9999)
 
 	@echo -e "\n=== Test 1: Create Event ==="
-	@response=$$(grpcurl -plaintext -d '{"event": {"id": "test-1", "title": "Test Event", "description": "Test Description", "start_time": 1721664000, "end_time": 1721667600, "user_id": "test-user", "notify_at": 1721660400}}' $(SERVER_ADDR) event.EventService/CreateEvent); \
+	@response=$$(grpcurl -plaintext -d '{"event": {"id": "test-1", "title": "Test Event", "description": "Test Description", "startTime": 1721664000, "endTime": 1721667600, "userId": "test-user", "notifyAt": 1721660400}}' $(SERVER_ADDR) event.EventService/CreateEvent); \
 	if [ $$? -ne 0 ]; then \
 		echo "❌ Ошибка: событие 'test-1' не создано. Код возврата: $$?"; \
 		kill -2 $$(cat server.pid) && rm -f server.pid; \
@@ -182,7 +182,7 @@ test-grpc: check-grpcurl
 	fi
 
 	@echo -e "\n=== Test 4: Update Event ==="
-	@response=$$(grpcurl -plaintext -d '{"event": {"id": "test-1", "title": "Updated Event", "description": "Updated Description", "start_time": 1721664000, "end_time": 1721667600, "user_id": "test-user", "notify_at": 1721660400}}' $(SERVER_ADDR) event.EventService/UpdateEvent); \
+	@response=$$(grpcurl -plaintext -d '{"event": {"id": "test-1", "title": "Updated Event", "description": "Updated Description", "startTime": 1721664000, "endTime": 1721667600, "userId": "test-user", "notifyAt": 1721660400}}' $(SERVER_ADDR) event.EventService/UpdateEvent); \
 	if [ $$? -ne 0 ]; then \
 		echo "❌ Ошибка: событие 'test-1' не обновлено. Код возврата: $$?"; \
 		kill -2 $$(cat server.pid) && rm -f server.pid; \

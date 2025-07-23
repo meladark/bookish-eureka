@@ -27,7 +27,7 @@ func loggingMiddleware(logger logger.Logger) func(http.Handler) http.Handler {
 
 			logLine := fmt.Sprintf("%s [%s] %s %s %s %d %v \"%s\"",
 				clientIP,
-				start.Format("13/Jul/1996:10:00:00 -0700"),
+				start.Format("2006-01-02 15:04:05"),
 				method, path, proto, code, latency, ua,
 			)
 			logger.Info(logLine)

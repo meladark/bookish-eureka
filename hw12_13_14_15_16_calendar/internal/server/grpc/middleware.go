@@ -24,7 +24,7 @@ func loggingMiddleware(logger logger.Logger) grpc.UnaryServerInterceptor {
 		logLine := fmt.Sprintf(
 			"%s [%s] gRPC %s %s %v",
 			remoteAddrFromContext(ctx),
-			start.Format("02/Jan/2006:15:04:05 -0700"),
+			start.Format("2006-01-02 15:04:05"),
 			info.FullMethod,
 			st.Code(),
 			time.Since(start),
