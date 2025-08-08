@@ -1,5 +1,5 @@
 [logger]
-level = "info"
+level = "debug"
 logfile = "./calendar.log"
 
 [http_server]

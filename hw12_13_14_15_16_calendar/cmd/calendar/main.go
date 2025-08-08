@@ -38,7 +38,7 @@ func main() {
 	logg := logger.New(cfg.Logger.Level, cfg.Logger.Logfile)
 
 	var storage event.Storage
-
+	logg.Debug(cfg.Storage.SQL.DSN)
 	switch cfg.Storage.Type {
 	case "memory":
 		storage = memorystorage.New()
@@ -88,7 +88,7 @@ func main() {
 	if err := httpServer.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
-		//nolint:gocritic // reason: выше явно есть cancel
+		//nolint:gocritic
 		os.Exit(1)
 	}
 }

@@ -40,7 +40,8 @@ func NewServer(a *app.App, logger logger.Logger) *Server {
 
 func (s *Server) Start(ctx context.Context, host, port string) error {
 	addr := fmt.Sprintf("%s:%s", host, port)
-	lis, err := net.Listen("tcp", addr)
+	var lc net.ListenConfig
+	lis, err := lc.Listen(ctx, "tcp", addr)
 	if err != nil {
 		return err
 	}

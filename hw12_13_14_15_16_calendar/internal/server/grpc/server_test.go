@@ -56,7 +56,7 @@ func setupGrpcTestServer(t *testing.T) (pb.EventServiceClient, func()) {
 			t.Logf("grpc server error: %v", err)
 		}
 	}()
-	//nolint:staticcheck // просто тест же
+	//nolint:staticcheck
 	conn, err := grpc.DialContext(ctx, "bufnet",
 		grpc.WithContextDialer(dialer(lis)),
 		grpc.WithTransportCredentials(insecure.NewCredentials()),

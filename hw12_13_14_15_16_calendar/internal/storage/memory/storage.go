@@ -3,8 +3,8 @@ package memorystorage
 import (
 	"context"
 	"sync"
+	"time"
 
-	//nolint:depguard
 	event "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage"
 )
 
@@ -79,4 +79,29 @@ func (s *Storage) ListEvents(_ context.Context) ([]event.Event, error) {
 		events = append(events, ev)
 	}
 	return events, nil
+}
+
+func (s *Storage) EventsToNotify(_ context.Context, now time.Time) ([]event.Event, error) {
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	var result []event.Event
+	for _, e := range s.events {
+		if !e.NotifyAt.IsZero() && e.NotifyAt.Before(now) || e.NotifyAt.Equal(now) {
+			result = append(result, e)
+		}
+	}
+	return result, nil
+}
+
+func (s *Storage) DeleteOldEvents(_ context.Context, before time.Time) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	for id, e := range s.events {
+		if e.EndTime.Before(before) {
+			delete(s.events, id)
+		}
+	}
+	return nil
 }

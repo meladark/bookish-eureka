@@ -140,7 +140,8 @@ func (s *Server) handleListEvents(w http.ResponseWriter, r *http.Request, period
 }
 
 func (s *Server) Start(ctx context.Context) error {
-	ln, err := net.Listen("tcp", s.http.Addr)
+	var lc net.ListenConfig
+	ln, err := lc.Listen(ctx, "tcp", s.http.Addr)
 	if err != nil {
 		return err
 	}

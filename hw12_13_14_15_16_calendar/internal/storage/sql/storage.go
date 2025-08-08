@@ -6,7 +6,6 @@ import (
 	"errors"
 	"time"
 
-	//nolint:depguard
 	event "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage"
 	//nolint:depguard
 	"github.com/lib/pq"
@@ -211,4 +210,32 @@ func (s *Storage) ListEvents(ctx context.Context) ([]event.Event, error) {
 		events = append(events, e)
 	}
 	return events, nil
+}
+
+func (s *Storage) EventsToNotify(ctx context.Context, now time.Time) ([]event.Event, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, title, description, start_time, end_time, user_id, notify_at
+		FROM events
+		WHERE notify_at <= $1 AND notify_at IS NOT NULL
+	`, now)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var events []event.Event
+	for rows.Next() {
+		var e event.Event
+		err := rows.Scan(&e.ID, &e.Title, &e.Description, &e.StartTime, &e.EndTime, &e.UserID, &e.NotifyAt)
+		if err != nil {
+			return nil, err
+		}
+		events = append(events, e)
+	}
+	return events, nil
+}
+
+func (s *Storage) DeleteOldEvents(ctx context.Context, before time.Time) error {
+	_, err := s.db.ExecContext(ctx, `DELETE FROM events WHERE end_time < $1`, before)
+	return err
 }

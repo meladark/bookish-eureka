@@ -1,4 +1,6 @@
 BIN := "./bin/calendar"
+BIN_SCHEDULER := "bin/calendar_scheduler"
+BIN_SENDER := "bin/calendar_sender"
 DOCKER_IMG="calendar:develop"
 
 GIT_HASH := $(shell git log --format="%h" -n 1)
@@ -123,6 +125,8 @@ stop-db:
 
 build:
 	go build -v -o $(BIN) -ldflags "$(LDFLAGS)" ./cmd/calendar
+	go build -v -o $(BIN_SCHEDULER) -ldflags "$(LDFLAGS)" ./cmd/calendar_scheduler
+	go build -v -o $(BIN_SENDER) -ldflags "$(LDFLAGS)" ./cmd/calendar_sender
 
 run: build
 	$(BIN) --config ./configs/config.toml
@@ -134,7 +138,7 @@ build-img:
 		-f build/Dockerfile .
 
 run-img: build-img
-	docker run -p 80:8888 -p 99:9999 $(DOCKER_IMG) 
+	docker run --entrypoint /opt/calendar/calendar -p 80:8888 -p 99:9999 $(DOCKER_IMG) --config /etc/calendar/config.toml
 
 version: build
 	$(BIN) version

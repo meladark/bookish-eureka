@@ -23,6 +23,8 @@ type Storage interface {
 	DeleteEvent(ctx context.Context, id string) error
 	ListEvents(ctx context.Context) ([]Event, error)
 	Close(ctx context.Context) error
+	EventsToNotify(ctx context.Context, now time.Time) ([]Event, error)
+	DeleteOldEvents(ctx context.Context, before time.Time) error
 }
 
 var (

@@ -25,6 +25,8 @@ services:
       context: ../
       dockerfile: build/Dockerfile
     container_name: calendar_app
+    entrypoint:
+      ["/opt/calendar/calendar", "--config", "/etc/calendar/config.toml"]
     depends_on:
       postgres:
         condition: service_healthy
@@ -34,12 +36,77 @@ services:
     environment:
       CALENDAR_STORAGE_TYPE: "sql"
       CALENDAR_STORAGE_SQL_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
-      CALENDAR_HTTP_SERVER_HOST: "localhost"
+      CALENDAR_HTTP_SERVER_HOST: "0.0.0.0"
       CALENDAR_HTTP_SERVER_PORT: "8080"
       CALENDAR_GRPC_SERVER_HOST: "0.0.0.0"
       CALENDAR_GRPC_SERVER_PORT: "9090"
       CALENDAR_LOGGER_LEVEL: ${APP_LOG_LEVEL}
       CALENDAR_LOGGER_LOGFILE: "./calendar.log"
+    volumes:
+      - .:/app
+    networks:
+      - calendar_network
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: calendar_rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - calendar_network
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+
+  scheduler:
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
+    container_name: calendar_scheduler
+    entrypoint:
+      [
+        "/opt/calendar/calendar-scheduler",
+        "--config",
+        "/etc/calendar/scheduler_config.toml",
+      ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SCHEDULER_LOGGER_LEVEL: "info"
+      SCHEDULER_LOGGER_LOGFILE: "./scheduler.log"
+      SCHEDULER_RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      SCHEDULER_RABBITMQ_QUEUE_NAME: "calendar_notifications"
+      SCHEDULER_DATABASE_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+    volumes:
+      - .:/app
+    networks:
+      - calendar_network
+
+  sender:
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
+    container_name: calendar_sender
+    entrypoint:
+      [
+        "/opt/calendar/calendar-sender",
+        "--config",
+        "/etc/calendar/sender_config.toml",
+      ]
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SENDER_LOGGER_LEVEL: "info"
+      SENDER_LOGGER_LOGFILE: "./sender.log"
+      SENDER_RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
+      SENDER_RABBITMQ_QUEUE_NAME: "calendar_notifications"
     volumes:
       - .:/app
     networks:
