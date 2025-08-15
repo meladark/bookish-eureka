@@ -1,36 +1,30 @@
-# Собираем в гошке
-FROM golang:1.22 as build
+# --- Build Stage ---
+FROM golang:1.24 AS build
 
-ENV BIN_FILE /opt/calendar/calendar-app
-ENV CODE_DIR /go/src/
-
+ENV CODE_DIR=/go/src/
 WORKDIR ${CODE_DIR}
 
-# Кэшируем слои с модулями
 COPY go.mod .
 COPY go.sum .
 RUN go mod download
 
 COPY . ${CODE_DIR}
 
-# Собираем статический бинарник Go (без зависимостей на Си API),
-# иначе он не будет работать в alpine образе.
 ARG LDFLAGS
-RUN CGO_ENABLED=0 go build \
-        -ldflags "$LDFLAGS" \
-        -o ${BIN_FILE} cmd/calendar/*
 
-# На выходе тонкий образ
-FROM alpine:3.9
+RUN CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o /opt/calendar/calendar ./cmd/calendar
+RUN CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o /opt/calendar/calendar-scheduler ./cmd/calendar_scheduler
+RUN CGO_ENABLED=0 go build -ldflags "$LDFLAGS" -o /opt/calendar/calendar-sender ./cmd/calendar_sender
+
+FROM scratch
 
 LABEL ORGANIZATION="OTUS Online Education"
 LABEL SERVICE="calendar"
-LABEL MAINTAINERS="student@otus.ru"
+LABEL MAINTAINERS="mi.volkov@bi.zone"
 
-ENV BIN_FILE "/opt/calendar/calendar-app"
-COPY --from=build ${BIN_FILE} ${BIN_FILE}
+COPY --from=build /opt/calendar/calendar /opt/calendar/calendar
+COPY --from=build /opt/calendar/calendar-scheduler /opt/calendar/calendar-scheduler
+COPY --from=build /opt/calendar/calendar-sender /opt/calendar/calendar-sender
 
-ENV CONFIG_FILE /etc/calendar/config.toml
-COPY ./configs/config.toml ${CONFIG_FILE}
+COPY ./configs /etc/calendar/
 
-CMD ${BIN_FILE} -config ${CONFIG_FILE}
