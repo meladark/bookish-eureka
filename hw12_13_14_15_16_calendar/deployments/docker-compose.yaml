@@ -1,51 +1,23 @@
-version: "3.8"
-
 services:
   postgres:
     image: postgres:latest
     container_name: calendar_postgres
     environment:
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
-      POSTGRES_DB: ${POSTGRES_DB}
-    #ports:
-    #  - "${POSTGRES_PORT}:5432"
+      POSTGRES_USER: calendar
+      POSTGRES_PASSWORD: calendar
+      POSTGRES_DB: calendar
+      POSTGRES_PORT: "5432"
+    ports:
+      - "${POSTGRES_PORT}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
       - calendar_network
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER}"]
+      test: ["CMD-SHELL", "pg_isready -U calendar"]
       interval: 5s
       timeout: 5s
       retries: 5
-
-  app:
-    build:
-      context: ../
-      dockerfile: build/Dockerfile
-    container_name: calendar_app
-    entrypoint:
-      ["/opt/calendar/calendar", "--config", "/etc/calendar/config.toml"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    ports:
-      - "${APP_PORT}:8080"
-      - "${GRC_PORT}:9090"
-    environment:
-      CALENDAR_STORAGE_TYPE: "sql"
-      CALENDAR_STORAGE_SQL_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
-      CALENDAR_HTTP_SERVER_HOST: "0.0.0.0"
-      CALENDAR_HTTP_SERVER_PORT: "8080"
-      CALENDAR_GRPC_SERVER_HOST: "0.0.0.0"
-      CALENDAR_GRPC_SERVER_PORT: "9090"
-      CALENDAR_LOGGER_LEVEL: ${APP_LOG_LEVEL}
-      CALENDAR_LOGGER_LOGFILE: "./calendar.log"
-    volumes:
-      - .:/app
-    networks:
-      - calendar_network
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -60,6 +32,42 @@ services:
       interval: 10s
       timeout: 10s
       retries: 5
+
+  app:
+    build:
+      context: ../
+      dockerfile: build/Dockerfile
+    container_name: calendar_app
+    entrypoint:
+      ["/opt/calendar/calendar", "--config", "/etc/calendar/config.toml"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    ports:
+      - "8888:8888"
+      - "9999:9999"
+    environment:
+      CALENDAR_STORAGE_TYPE: ${CALENDAR_STORAGE_TYPE:-sql}
+      # можно переопределять через env
+      CALENDAR_STORAGE_SQL_DSN: ${CALENDAR_STORAGE_SQL_DSN:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable}
+      CALENDAR_HTTP_SERVER_HOST: "0.0.0.0"
+      CALENDAR_HTTP_SERVER_PORT: "8888"
+      CALENDAR_GRPC_SERVER_HOST: "0.0.0.0"
+      CALENDAR_GRPC_SERVER_PORT: "9999"
+      CALENDAR_LOGGER_LEVEL: ${CALENDAR_LOGGER_LEVEL:-info}
+      CALENDAR_LOGGER_LOGFILE: "./calendar.log"
+    volumes:
+      - ../configs:/etc/calendar/:ro
+    networks:
+      - calendar_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/ || exit 1"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 5s
 
   scheduler:
     build:
@@ -78,15 +86,22 @@ services:
       rabbitmq:
         condition: service_healthy
     environment:
-      SCHEDULER_LOGGER_LEVEL: "info"
-      SCHEDULER_LOGGER_LOGFILE: "./scheduler.log"
-      SCHEDULER_RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      SCHEDULER_RABBITMQ_QUEUE_NAME: "calendar_notifications"
-      SCHEDULER_DATABASE_DSN: "postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}?sslmode=disable"
+      SCHEDULER_RABBITMQ_URL: ${SCHEDULER_RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      SCHEDULER_RABBITMQ_QUEUE_NAME: ${SCHEDULER_RABBITMQ_QUEUE_NAME:-calendar_notifications}
+      SCHEDULER_DATABASE_DSN: ${SCHEDULER_DATABASE_DSN:-postgres://${POSTGRES_USER:-calendar}:${POSTGRES_PASSWORD:-calendar}@postgres:5432/${POSTGRES_DB:-calendar}?sslmode=disable}
+      SCHEDULER_LOGGER_LEVEL: ${SCHEDULER_LOGGER_LEVEL:-info}
+      SCHEDULER_LOGGER_LOGFILE: ./scheduler.log
     volumes:
-      - .:/app
+      - ../configs:/etc/calendar/:ro
     networks:
       - calendar_network
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -h postgres -U ${POSTGRES_USER} || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   sender:
     build:
@@ -102,15 +117,23 @@ services:
     depends_on:
       rabbitmq:
         condition: service_healthy
+      postgres:
+        condition: service_healthy
     environment:
-      SENDER_LOGGER_LEVEL: "info"
-      SENDER_LOGGER_LOGFILE: "./sender.log"
-      SENDER_RABBITMQ_URL: "amqp://guest:guest@rabbitmq:5672/"
-      SENDER_RABBITMQ_QUEUE_NAME: "calendar_notifications"
+      SENDER_RABBITMQ_URL: ${SENDER_RABBITMQ_URL:-amqp://guest:guest@rabbitmq:5672/}
+      SENDER_RABBITMQ_QUEUE_NAME: ${SENDER_RABBITMQ_QUEUE_NAME:-calendar_notifications}
+      SENDER_DATABASE_DSN: ${SENDER_DATABASE_DSN:-postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}?sslmode=disable}
+      SENDER_LOGGER_LOGFILE: ./sender.log
     volumes:
-      - .:/app
+      - ../configs:/etc/calendar/:ro
     networks:
       - calendar_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8888/ || true"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
 volumes:
   pgdata:
@@ -118,3 +141,4 @@ volumes:
 networks:
   calendar_network:
     driver: bridge
+    attachable: true

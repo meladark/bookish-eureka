@@ -12,8 +12,26 @@ POSTGRES_USER=calendar
 POSTGRES_PASSWORD=calendar
 POSTGRES_DB=calendar
 POSTGRES_VOLUME=calendar_temp_pgdata
+EXIT_CODE=127
 
-.PHONY: test-grpc generate build run build-img run-img version test lint run-db stop-db run-server test-server
+.PHONY: test-grpc generate build run build-img run-img version test lint run-db stop-db run-server test-server up down integration-tests
+
+up:
+	docker-compose -f deployments/docker-compose.yaml up -d --build
+
+down:
+	docker-compose -f deployments/docker-compose.yaml down -v --remove-orphans
+
+integration-tests: up
+	@echo "🚀 Запуск интеграционных тестов..."
+	@docker-compose -f deployments/docker-compose.test.yml up \
+		--abort-on-container-exit \
+		--exit-code-from tests \
+		--force-recreate \
+		tests || \
+		TEST_EXIT_CODE=$$?; \
+	make down; \
+	exit $$TEST_EXIT_CODE
 
 run-server:
 	@$(BIN) --config ./configs/config.toml & echo $$! > server.pid

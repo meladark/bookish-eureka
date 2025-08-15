@@ -28,16 +28,20 @@ func New(dsn string) (*Storage, error) {
 	}
 
 	const checkTableQuery = `
-		SELECT to_regclass('public.events')
-	`
-	var tableName sql.NullString
-	if err := db.QueryRowContext(ctx, checkTableQuery).Scan(&tableName); err != nil {
+    SELECT EXISTS (
+        SELECT 1 FROM pg_type WHERE typname = 'events' AND typnamespace = 'public'::regnamespace
+    ) OR EXISTS (
+        SELECT 1 FROM pg_tables WHERE tablename = 'events' AND schemaname = 'public'
+    )
+`
+	var exists bool
+	if err := db.QueryRowContext(ctx, checkTableQuery).Scan(&exists); err != nil {
 		return nil, err
 	}
 	//nolint:nestif
-	if !tableName.Valid {
+	if !exists {
 		const createTableQuery = `
-			CREATE TABLE events (
+			CREATE TABLE IF NOT EXISTS events (
 				id TEXT PRIMARY KEY,
 				title TEXT NOT NULL,
 				description TEXT,
@@ -48,6 +52,18 @@ func New(dsn string) (*Storage, error) {
 			)
 		`
 		if _, err := db.ExecContext(ctx, createTableQuery); err != nil {
+			return nil, err
+		}
+		const createNotifications = `
+			CREATE TABLE IF NOT EXISTS notifications (
+				id SERIAL PRIMARY KEY,
+				event_id TEXT NOT NULL,
+				title TEXT NOT NULL,
+				scheduled_at TIMESTAMP,
+				processed_at TIMESTAMP NOT NULL DEFAULT now()
+			)
+		`
+		if _, err := db.ExecContext(ctx, createNotifications); err != nil {
 			return nil, err
 		}
 	} else {
