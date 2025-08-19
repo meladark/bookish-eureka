@@ -1,0 +1,75 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: calendar-calendar-config
+data:
+  api.toml: |
+    [logger]
+    level = "debug"
+    logfile = "./calendar.log"
+
+    [http_server]
+    host = "0.0.0.0"
+    port = "8888"
+
+    [grpc_server]
+    host = "0.0.0.0"
+    port = "9999"
+
+    [storage]
+    type = "memory"
+
+        [storage.sql]
+        dsn = "postgres://calendar_user:calendar_pass@localhost:5432/calendar_db?sslmode=disable"
+
+  scheduler.toml: |
+    [logger]
+    level = "info"
+    logfile = "./scheduler.log"
+
+    [database]
+    dsn = "postgres://calendar_user:calendar_pass@localhost:5432/calendar_db?sslmode=disable"
+
+    [rabbitmq]
+    url = "amqp://guest:guest@rabbitmq:5672/"
+    queue_name = "calendar_notifications"
+
+    [scheduler]
+    interval = "30s"
+
+  sender.toml: |
+    [logger]
+    level = "info"
+    logfile = "./sender.log"
+
+    [rabbitmq]
+    url = "amqp://guest:guest@rabbitmq:5672/"
+    queue_name = "calendar_notifications"
+
+    [database]
+    dsn = "postgres://calendar_user:calendar_pass@localhost:5432/calendar_db?sslmode=disable"
+
+  CALENDAR_LOGGER_LEVEL: "info"
+  CALENDAR_LOGGER_LOGFILE: "./calendar.log"
+
+  # Настройки для сервиса app
+  CALENDAR_STORAGE_TYPE: "sql"
+  CALENDAR_STORAGE_SQL_DSN: "postgres://calendar:calendar@my-postgresql:5432/calendar?sslmode=disable"
+  CALENDAR_HTTP_SERVER_HOST: "0.0.0.0"
+  CALENDAR_HTTP_SERVER_PORT: "8888"
+  CALENDAR_GRPC_SERVER_HOST: "0.0.0.0"
+  CALENDAR_GRPC_SERVER_PORT: "9999"
+
+  # Настройки для scheduler
+  SCHEDULER_RABBITMQ_URL: "amqp://user:vkjqMnPJEymQZ8Uf@my-rabbitmq:5672/"
+  SCHEDULER_RABBITMQ_QUEUE_NAME: "calendar_notifications"
+  SCHEDULER_DATABASE_DSN: "postgres://calendar:calendar@my-postgresql:5432/calendar?sslmode=disable"
+  SCHEDULER_LOGGER_LEVEL: "info"
+  SCHEDULER_LOGGER_LOGFILE: "./scheduler.log"
+
+  # Настройки для sender
+  SENDER_RABBITMQ_URL: "amqp://user:vkjqMnPJEymQZ8Uf@my-rabbitmq:5672/"
+  SENDER_RABBITMQ_QUEUE_NAME: "calendar_notifications"
+  SENDER_DATABASE_DSN: "postgres://calendar:calendar@my-postgresql:5432/calendar?sslmode=disable"
+  SENDER_LOGGER_LEVEL: "info"
+  SENDER_LOGGER_LOGFILE: "./sender.log"

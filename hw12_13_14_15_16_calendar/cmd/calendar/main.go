@@ -8,10 +8,13 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
-	"github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
+	app "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/app"
+	logger "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/logger"
+	internalgrpc "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/grpc"
 	internalhttp "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/server/http"
+	event "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage"
 	memorystorage "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/memory"
+	sql "github.com/fixme_my_friend/hw12_13_14_15_calendar/internal/storage/sql"
 )
 
 var configFile string
@@ -28,13 +31,32 @@ func main() {
 		return
 	}
 
-	config := NewConfig()
-	logg := logger.New(config.Logger.Level)
+	cfg, err := NewConfig(configFile)
+	if err != nil {
+		panic("cannot load config: " + err.Error())
+	}
+	logg := logger.New(cfg.Logger.Level, cfg.Logger.Logfile)
 
-	storage := memorystorage.New()
-	calendar := app.New(logg, storage)
+	var storage event.Storage
+	logg.Debug(cfg.Storage.SQL.DSN)
+	switch cfg.Storage.Type {
+	case "memory":
+		storage = memorystorage.New()
+	case "sql":
+		db, err := sql.New(cfg.Storage.SQL.DSN)
+		if err != nil {
+			logg.Error("cannot init sql storage: " + err.Error())
+			os.Exit(1)
+		}
+		storage = db
+	default:
+		logg.Error("unknown storage type: " + cfg.Storage.Type)
+		os.Exit(1)
+	}
+	application := app.New(logg, storage)
 
-	server := internalhttp.NewServer(logg, calendar)
+	httpServer := internalhttp.NewServer(logg, application, cfg.HTTPServer.Host, cfg.HTTPServer.Port)
+	grpcServer := internalgrpc.NewServer(application, logg)
 
 	ctx, cancel := signal.NotifyContext(context.Background(),
 		syscall.SIGINT, syscall.SIGTERM, syscall.SIGHUP)
@@ -42,20 +64,31 @@ func main() {
 
 	go func() {
 		<-ctx.Done()
-
-		ctx, cancel := context.WithTimeout(context.Background(), time.Second*3)
+		ctxTimeout, cancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer cancel()
 
-		if err := server.Stop(ctx); err != nil {
+		if err := httpServer.Stop(ctxTimeout); err != nil {
 			logg.Error("failed to stop http server: " + err.Error())
+		}
+
+		if err := grpcServer.Stop(); err != nil {
+			logg.Error("failed to stop grpc server: " + err.Error())
+		}
+	}()
+
+	go func() {
+		if err := grpcServer.Start(ctx, cfg.GRPCServer.Host, cfg.GRPCServer.Port); err != nil {
+			logg.Error("failed to start grpc server: " + err.Error())
+			cancel()
 		}
 	}()
 
 	logg.Info("calendar is running...")
 
-	if err := server.Start(ctx); err != nil {
+	if err := httpServer.Start(ctx); err != nil {
 		logg.Error("failed to start http server: " + err.Error())
 		cancel()
-		os.Exit(1) //nolint:gocritic
+		//nolint:gocritic
+		os.Exit(1)
 	}
 }
