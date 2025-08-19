@@ -1,0 +1,12 @@
+global:
+  postgresql:
+    auth:
+      username: calendar
+      password: calendar
+      database: calendar
+      postgresPassword: calendar
+
+primary:
+  service:
+    ports:
+      postgresql: 5432

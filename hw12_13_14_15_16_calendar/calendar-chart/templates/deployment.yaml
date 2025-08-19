@@ -1,0 +1,103 @@
+{{- $fullName := include "calendar.fullname" . -}}
+{{- $namespace := .Release.Namespace -}}
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-api
+  namespace: {{ $namespace }}
+spec:
+  replicas: {{ .Values.api.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $fullName }}-api
+  template:
+    metadata:
+      labels:
+        app: {{ $fullName }}-api
+    spec:
+      containers:
+        - name: api
+          image: "{{ .Values.api.image.repository }}:{{ .Values.api.image.tag }}"
+          imagePullPolicy: Never
+          command: ["/opt/calendar/calendar"]
+          args: ["--config", "/etc/calendar/api.toml"]
+          volumeMounts:
+            - name: calendar-config
+              mountPath: /etc/calendar
+              readOnly: true
+          ports:
+            - containerPort: {{ .Values.api.port }}
+          envFrom:
+            - configMapRef: 
+                name: {{ $fullName }}-config
+      volumes:
+        - name: calendar-config
+          configMap:
+            name: {{ $fullName }}-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-scheduler
+  namespace: {{ $namespace }}
+spec:
+  replicas: {{ .Values.scheduler.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $fullName }}-scheduler
+  template:
+    metadata:
+      labels:
+        app: {{ $fullName }}-scheduler
+    spec:
+      containers:
+        - name: scheduler
+          image: "{{ .Values.scheduler.image.repository }}:{{ .Values.scheduler.image.tag }}"
+          imagePullPolicy: Never
+          command: ["/opt/calendar/calendar-scheduler"]
+          args: ["--config", "/etc/calendar/scheduler.toml"]
+          volumeMounts:
+            - name: calendar-config
+              mountPath: /etc/calendar
+              readOnly: true
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}-config
+      volumes:
+        - name: calendar-config
+          configMap:
+            name: {{ $fullName }}-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ $fullName }}-sender
+  namespace: {{ $namespace }}
+spec:
+  replicas: {{ .Values.sender.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $fullName }}-sender
+  template:
+    metadata:
+      labels:
+        app: {{ $fullName }}-sender
+    spec:
+      containers:
+        - name: sender
+          image: "{{ .Values.sender.image.repository }}:{{ .Values.sender.image.tag }}"
+          imagePullPolicy: Never
+          command: ["/opt/calendar/calendar-sender"]
+          args: ["--config", "/etc/calendar/sender.toml"]
+          volumeMounts:
+            - name: calendar-config
+              mountPath: /etc/calendar
+              readOnly: true
+          envFrom:
+            - configMapRef:
+                name: {{ $fullName }}-config
+      volumes:
+        - name: calendar-config
+          configMap:
+            name: {{ $fullName }}-config

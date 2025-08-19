@@ -1,0 +1,58 @@
+replicaCount: 1
+
+image:
+  repository: myregistry/calendar
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8888
+
+ingress:
+  enabled: true
+  host: calendar.local
+  annotations:
+    kubernetes.io/ingress.class: nginx
+  tls: []
+
+config:
+  apiConfig: |
+    [server]
+    port = 8888
+
+  schedulerConfig: |
+    [scheduler]
+    interval = 10
+
+  senderConfig: |
+    [sender]
+    retries = 3
+
+secret:
+  postgresUser: postgres
+  postgresPassword: zwHV9ROCjO
+  rabbitUser: rabbitmq
+  rabbitPassword: vkjqMnPJEymQZ8Uf
+
+api:
+  replicas: 1
+  port: 8888
+  image:
+    repository: calendar-api
+    tag: latest
+    pullPolicy: Never
+
+scheduler:
+  replicas: 1
+  image:
+    repository: calendar-scheduler
+    tag: latest
+    pullPolicy: Never
+
+sender:
+  replicas: 1
+  image:
+    repository: calendar-sender
+    tag: latest
+    pullPolicy: Never
